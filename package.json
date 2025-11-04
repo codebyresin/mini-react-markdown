@@ -1,0 +1,30 @@
+{
+  "name": "mini-markdown-resin",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "main": "index.js",
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=7"
+  },
+  "workspaces": [
+    "packages/*",
+    "docs"
+  ],
+  "scripts": {
+    "in": "pnpm install -r",
+    "dev:ast": "pnpm -F @mini-markdown-resin/ast-parser dev",
+    "build:ast": "pnpm -F @mini-markdown-resin/ast-parser build",
+    "dev:editor": "pnpm -F @mini-markdown-resin/editor dev",
+    "build:editor": "pnpm -F @mini-markdown-resin/editor build",
+    "build": "pnpm build:ast && pnpm build:editor",
+    "dev:docs": "pnpm -F @mini-markdown-resin/docs dev",
+    "build:docs": "pnpm -F @mini-markdown-resin/docs build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.17.1"
+}

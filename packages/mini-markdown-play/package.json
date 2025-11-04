@@ -1,0 +1,40 @@
+{
+  "name": "@mini-markdown-resin/editor1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.17.1",
+  "dependencies": {
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
+    "ahooks": "^3.9.5",
+    "antd": "^5.27.4",
+    "emoji-mart": "^5.6.0",
+    "events": "^3.3.0",
+    "highlight.js": "^11.11.1",
+    "html2pdf.js": "^0.10.3",
+    "immer": "^10.1.3",
+    "nanoid": "^5.1.6",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hotkeys-hook": "^4.6.2",
+    "typescript": "~5.6.3",
+    "typescript-eslint": "^8.44.1",
+    "vite": "^6.3.6",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^3.2.4",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@codemirror/commands": "^6.8.1",
+    "@codemirror/lang-markdown": "^6.3.4",
+    "@codemirror/language-data": "^6.5.1",
+    "@eslint/js": "^9.18.0"
+  }
+}

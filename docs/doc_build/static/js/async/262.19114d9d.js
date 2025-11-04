@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunk_mini_markdown_resin_docs=self.webpackChunk_mini_markdown_resin_docs||[]).push([["262"],{8883:function(e,n,i){i.r(n),i.d(n,{default:()=>s});var r=i(651),t=i(9693),a=i(4297);function s(){let e=(0,a.e7)(),n=(0,a.Vi)();return(0,r.jsx)(r.Fragment,{children:(0,r.jsx)(t.ML,{theme:e?"dark":"light",local:!1,value:n.page.frontmatter.initVal})})}}}]);

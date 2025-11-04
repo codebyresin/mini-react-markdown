@@ -1,0 +1,1529 @@
+# API
+
+## 属性
+
+:::tip 提示
+
+`Editor` 组件基于 `CodeMirror` 实现，支持所有 CodeMirror 的原生配置选项，并进行了功能扩展。本文档中仅列出了扩展属性和部分常用配置，如需了解全部配置选项，请查阅 [CodeMirror 官方文档](https://codemirror.net/doc/manual.html#config)。
+
+:::
+
+### toolbars
+
+- 类型：`{ addTools?: ToolbarItem[]; excludeTools?: string[]; orderTools?: { type: string; order: number }[]; }`
+  - addTools：可以自定义新增 `toolbar` 配置项
+  - excludeTools：需要过滤工具项的 `toolbar` 数组配置项
+  - orderTools: 排序 `toolbar` 中工具项先后顺序的数组配置项
+- 默认值：`undefined`
+
+需要渲染的 toolbar，默认全部渲染。
+
+**工具栏项接口定义：**
+
+```ts
+export interface BaseToolbarItem {
+  type: ToolbarType;
+  icon?: string;
+  title?: string;
+  description?: string;
+  disabled?: boolean;
+  visible?: boolean;
+  onClick?: () => void;
+  component?: React.ReactNode;
+}
+
+export interface ToolbarItemListItem {
+  title: string;
+  type: string;
+  hotkey?: {
+    command: string;
+    description: string;
+    handle?: () => void;
+  };
+  onClick?: (...args: any[]) => void | (() => void);
+}
+
+// 完整的工具栏项接口
+export interface ToolbarItem extends BaseToolbarItem {
+  list?: ToolbarItemListItem[];
+  hotkey?: {
+    command: string;
+    description: string;
+    handle?: () => void;
+  };
+}
+```
+
+#### 1. 移除工具栏
+
+:::warning 警告
+
+只能移除已存在的工具栏项，传入未被识别的工具栏项，不会生效。
+
+:::
+
+```tsx
+<Editor
+  toolbars={{
+    excludeTools: ["bold", "italic"],
+  }}
+/>
+```
+
+#### 2. 新增工具栏
+
+> **有三种方法可以自定义工具栏：配置项、组件、工具栏实例。**
+
+- 方法1：配置项
+
+  ```tsx
+  // 因为 icon 属性需要的是 字符串，所以导入路径的时候需要使用 `?raw`
+  /**
+   * 尽量将 svg 的 width、height 设置为 1em
+   * <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"></svg>
+   */
+  import CustomToolbarIcon from "@/assets/images/custom-toolbar.svg?raw";
+
+  <Editor
+    toolbars={{
+      addTools: [
+        {
+          type: "custom-toolbar",
+          title: "自定义toolbar",
+          icon: CustomToolbarIcon, // type: string
+          description: "自定义toolbar的描述",
+          hotkey: {
+            command: "Mod-p", // 快捷键
+            description: "Mod-p", // 工具栏快捷键展示的描述信息
+            handle: () => {
+              // 执行快捷键后的回调
+              console.log("我是快捷键输出123");
+            },
+          },
+          // 点击工具栏按钮的回调
+          onClick: () => {
+            console.log("我是快捷键输出123");
+          },
+        },
+      ],
+    }}
+  />;
+  ```
+
+- 方法2：组件
+
+  通过配置 `component` 属性，可以自定义工具栏的样式。
+
+  > 在该方式中，工具栏的样式需要完全自定义。
+
+  ![自定义toolbar的描述](./img/custom-toolbar.png)
+
+  ```tsx
+  <Editor
+    toolbars={{
+      addTools: [
+        {
+          type: "custom-toolbar",
+          component: <div>组件</div>,
+        },
+      ],
+    }}
+  />
+  ```
+
+- 方法3： 工具栏实例
+
+  可以通过 `ToolbarManager` 实例方法，对工具栏进行操作。
+
+  此处给出添加工具栏项的示例:
+
+  ```tsx {1,7-24}
+  import { Editor, ToolbarManager, insertContent } from "mini-markdown-editor";
+  import { useEffect } from "react";
+
+  const App = () => {
+    useEffect(() => {
+      try {
+        toolbarConfig.addToolItem({
+          type: "custom-toolbar",
+          title: "自定义工具栏",
+          icon: CustomToolbarIcon,
+          description: "自定义工具栏的描述",
+          hotkey: {
+            command: "Mod-l",
+            description: "快捷键描述",
+            handle: () => {
+              console.log("执行快捷键的回调");
+            },
+          },
+          onClick: () => {
+            // 插入内容
+            insertContent.insertTextAtCursor("123");
+            // 更精细控制
+            insertContent.insertContent("123", { anchor: 1, head: 1 });
+          },
+        });
+        console.log("添加工具栏成功");
+      } catch (error) {
+        console.error("添加工具栏失败:", error);
+      }
+    }, []);
+    return (
+      <>
+        <Editor />
+      </>
+    );
+  };
+
+  export default App;
+  ```
+
+  > 想要深入了解 ToolbarManager 实例方法，可以移步查看: [ToolbarManager 实例方法](#toolbarmanager)。
+
+#### 3. 工具栏排序
+
+通过 `orderTools` 配置项，可以对工具栏中的工具项进行排序。
+
+> 只对 `orderTools` 中配置的工具项进行排序，未配置的工具项不受影响。
+
+```tsx
+<Editor
+  toolbars={{
+    orderTools: [
+      { type: "bold", order: 1 },
+      { type: "italic", order: 2 },
+      { type: "underline", order: 3 },
+    ],
+  }}
+/>
+```
+
+### placeholder
+
+- 类型：`string`
+- 默认值：`undefined`
+
+编辑器内容为空时，展示在编辑器中的提示文字。
+
+```tsx
+<Editor placeholder="请输入内容" />
+```
+
+### value
+
+- 类型：`string`
+- 默认值：`""`
+
+编辑器内容初始化内容。
+
+:::warning 警告
+
+当 `local` 为 `false` 时，`value` 才会起作用。不然会默认使用 `localStorage` 中的内容。
+
+:::
+
+```tsx
+<Editor value="# Hello World" local={false} />
+```
+
+### local
+
+- 类型：`boolean`
+- 默认值：`true`
+
+是否开启本地存储，默认开启。
+
+> `localStorage` 存储的 key 为 `markdown-editor-content`
+
+```tsx
+<Editor local={false} />
+```
+
+### status
+
+- 类型：`boolean`
+- 默认值：`true`
+
+底部状态栏是否显示，默认显示。
+
+```tsx
+<Editor status={false} />
+```
+
+### theme
+
+- 类型：`"light" | "dark"`
+- 默认值：`"light"`
+
+编辑器主题。
+
+```tsx
+const App = () => {
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const handleChange = () => {
+    setTheme(theme === "light" ? "dark" : "light");
+  };
+  return (
+    <>
+      <button onClick={handleChange}>切换主题</button>
+      <Editor theme={theme} />
+    </>
+  );
+};
+```
+
+### locale
+
+- 类型：`"en" | "cn" | "tw"`
+- 默认值：`"cn"`
+
+语言环境。
+
+```tsx
+<Editor locale="cn" />
+```
+
+### autoFocus
+
+- 类型：`boolean`
+- 默认值：`false`
+
+是否自动聚焦，默认不聚焦。
+
+```tsx
+<Editor autoFocus={true} />
+```
+
+### lineNumbers
+
+- 类型：`boolean`
+- 默认值：`false`
+
+编辑区是否显示行号，默认不显示。
+
+```tsx
+<Editor lineNumbers={true} />
+```
+
+### enableShortcuts
+
+- 类型：`boolean`
+- 默认值：`true`
+
+是否开启快捷键支持，默认开启。
+
+```tsx
+<Editor enableShortcuts={true} />
+```
+
+### style、className、id等其他属性
+
+为**编辑区**添加样式、类名、id...，可以使用 `CodeMirror` 的属性。
+
+> `style`、`className`、`id` 等属性，是继承的 `CodeMirror` 属性，所以配置的是**编辑区**。
+>
+> - className：默认为 `markdown-editor-content`
+
+## 事件
+
+:::tip 提示
+
+`Editor` 组件的事件系统基于 `CodeMirror` 进行了扩展，部分基础事件已重命名或优化。本文档列出了常用事件处理方法，如需了解全部事件类型及详细用法，请参考 [CodeMirror 事件文档](https://codemirror.net/doc/manual.html#events)。
+
+:::
+
+
+### onChange
+
+- 类型：`(value: string, editorView: ViewUpdate) => void`
+  - value：编辑器内容
+  - editorView：编辑器实例
+
+编辑器内容变化时触发。
+
+```tsx
+<Editor
+  onChange={(value, editorView) => {
+    console.log(value, editorView);
+  }}
+/>
+```
+
+### onSave
+
+- 类型：`(value: string, editorView: EditorView) => void`
+
+保存事件，当点击 `保存按钮` / `按下快捷键` 时触发。
+
+```tsx
+<Editor
+  onSave={(value, editorView) => {
+    // 上传服务器
+    console.log(value, editorView);
+  }}
+/>
+```
+
+### onUpload
+
+- 类型：`(file: File, callback: Callback) => void`
+  - file：`File` 对象
+  - callback：`Callback`
+
+```ts
+type Callback = (param: { url: string; alt?: string }) => void;
+```
+
+上传图片事件，等待上传结果，务必将上传后的 url 作为 callback 入参回传。
+
+```tsx {5,12-15,19}
+import { message } from "antd";
+
+const App: FC = () => {
+  // 请求测试
+  const handleUpload = async (file: File, callback: Callback) => {
+    await new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({});
+      }, 1500);
+    });
+    callback({
+      url: "https://www.baidu.com/img/flexible/logo/pc/result@2.png",
+      alt: "alt",
+    });
+    message.success("上传成功");
+  };
+
+  return <EditorWrapper onUpload={handleUpload} />;
+};
+```
+
+### onDragUpload
+
+- 类型：`(file: File, callback: Callback) => void`
+  - file：`File` 对象
+  - callback：`Callback`
+
+```ts
+type Callback = (param: { url: string; alt?: string }) => void;
+```
+
+拖拽上传图片时触发，务必将上传后的 url 作为 callback 入参回传。
+
+> callback的alt是可选项，如果没传的话就是nanoid生成的8位随机数字英文。
+
+### onPatseUpload
+
+粘贴上传图片时触发，同 `onDragUpload` 事件。
+
+## ref
+
+编辑器实例方法。
+
+> 具体类型，参考 [EditorRef](./api#editorref)
+
+```tsx
+import { Editor, type EditorRef } from "mini-markdown-editor";
+import { useRef } from "react";
+
+export default function () {
+  const editorRef = useRef<EditorRef>(null);
+  return (
+    <>
+      <Editor ref={editorRef} />
+    </>
+  );
+}
+```
+
+### getContent
+
+- 参数：`void`
+- 返回值：`string`
+
+获取编辑器内容。
+
+```tsx {10}
+import { Editor, type EditorRef } from "mini-markdown-editor";
+import { useRef } from "react";
+
+export default function () {
+  const editorRef = useRef<EditorRef>(null);
+  return (
+    <>
+      <button
+        onClick={() => {
+          const text = editorRef.current?.getContent();
+          console.log(text);
+        }}
+      >
+        获取内容
+      </button>
+      <Editor ref={editorRef} />
+    </>
+  );
+}
+```
+
+### setContent
+
+- 参数：`content: string`
+- 返回值：`void`
+
+设置编辑器内容。
+
+```tsx {10}
+import { Editor, type EditorRef } from "mini-markdown-editor";
+import { useRef } from "react";
+
+export default function () {
+  const editorRef = useRef<EditorRef>(null);
+  return (
+    <>
+      <button
+        onClick={() => {
+          editorRef.current?.setContent("hello world");
+        }}
+      >
+        设置内容
+      </button>
+      <Editor ref={editorRef} />
+    </>
+  );
+}
+```
+
+### clear
+
+- 参数：`void`
+- 返回值：`void`
+
+清空编辑器内容。
+
+```tsx {10}
+import { Editor, type EditorRef } from "mini-markdown-editor";
+import { useRef } from "react";
+
+export default function () {
+  const editorRef = useRef<EditorRef>(null);
+  return (
+    <>
+      <button
+        onClick={() => {
+          editorRef.current?.clear();
+          console.log(editorRef.current?.getContent());
+        }}
+      >
+        清空内容
+      </button>
+      <Editor ref={editorRef} />
+    </>
+  );
+}
+```
+
+### setCursor
+
+- 参数：`start: number, end: number`
+- 返回值：`void`
+
+设置光标位置。
+
+```tsx {10}
+import { Editor, type EditorRef } from "mini-markdown-editor";
+import { useRef } from "react";
+
+export default function () {
+  const editorRef = useRef<EditorRef>(null);
+  return (
+    <>
+      <button
+        onClick={() => {
+          editorRef.current?.setCursor(100, 100);
+        }}
+      >
+        设置光标位置（100，100）
+      </button>
+      <Editor ref={editorRef} />
+    </>
+  );
+}
+```
+
+### getCursor
+
+- 参数：`void`
+- 返回值：`{ from: number, to: number }`
+
+获取光标位置，返回开始和结束位置（如果 `from` === `to`，则表示未选中内容）。
+
+```tsx {10}
+import { Editor, type EditorRef } from "mini-markdown-editor";
+import { useRef } from "react";
+
+export default function () {
+  const editorRef = useRef<EditorRef>(null);
+  return (
+    <>
+      <button
+        onClick={() => {
+          const position = editorRef.current?.getCursor();
+          console.log(position);
+        }}
+      >
+        获取光标位置
+      </button>
+      <Editor ref={editorRef} />
+    </>
+  );
+}
+```
+
+### getSelection
+
+- 参数：`void`
+- 返回值：`string`
+
+获取选中内容，返回选中的内容。
+
+```tsx {10}
+import { Editor, type EditorRef } from "mini-markdown-editor";
+import { useRef } from "react";
+
+export default function () {
+  const editorRef = useRef<EditorRef>(null);
+  return (
+    <>
+      <button
+        onClick={() => {
+          const text = editorRef.current?.getSelection();
+          console.log(text);
+        }}
+      >
+        获取选中内容
+      </button>
+      <Editor ref={editorRef} />
+    </>
+  );
+}
+```
+
+### focus
+
+- 参数：`void`
+- 返回值：`void`
+
+设置编辑器聚焦。
+
+```tsx {10}
+import { Editor, type EditorRef } from "mini-markdown-editor";
+import { useRef } from "react";
+
+export default function () {
+  const editorRef = useRef<EditorRef>(null);
+  return (
+    <>
+      <button
+        onClick={() => {
+          editorRef.current?.focus();
+        }}
+      >
+        聚焦
+      </button>
+      <Editor ref={editorRef} />
+    </>
+  );
+}
+```
+
+### getEditorInstance
+
+- 参数：`void`
+- 返回值：`EditorView | null`
+
+获取 **`编辑区(CodeMirror)`** 实例。
+
+```tsx {10}
+import { Editor, type EditorRef } from "mini-markdown-editor";
+import { useRef } from "react";
+
+export default function () {
+  const editorRef = useRef<EditorRef>(null);
+  return (
+    <>
+      <button
+        onClick={() => {
+          const instance = editorRef.current?.getEditorInstance();
+          console.log(instance);
+        }}
+      >
+        获取编辑器实例
+      </button>
+      <Editor ref={editorRef} />
+    </>
+  );
+}
+```
+
+### getPreviewInstance
+
+- 参数：`void`
+- 返回值：`HTMLElement | null`
+
+获取 **`预览区`** 实例。
+
+```tsx {10}
+import { Editor, type EditorRef } from "mini-markdown-editor";
+import { useRef } from "react";
+
+export default function () {
+  const editorRef = useRef<EditorRef>(null);
+  return (
+    <>
+      <button
+        onClick={() => {
+          const instance = editorRef.current?.getPreviewInstance();
+          console.log(instance);
+        }}
+      >
+        获取预览区实例
+      </button>
+      <Editor ref={editorRef} />
+    </>
+  );
+}
+```
+
+## 实例方法
+
+### ToolbarManager
+
+工具栏管理器，提供丰富的工具栏自定义功能。
+
+:::tip 注意
+
+必须在渲染 `<Editor />` 组件后才能使用 `ToolbarManager`。
+
+建议使用 `try...catch` 包裹相关操作以捕获可能的错误。
+
+:::
+
+```ts
+import { ToolbarManager } from "mini-markdown-editor";
+```
+
+**基本用法示例：**
+
+```tsx
+import { Editor, ToolbarManager } from "mini-markdown-editor";
+
+export default function EditorComponent() {
+  useEffect(() => {
+    try {
+      // 工具栏管理器操作...
+      const toolbars = ToolbarManager.getAllToolbars();
+      console.log(toolbars);
+    } catch (error) {
+      console.error("工具栏操作失败:", error);
+    }
+  }, []);
+  
+  return <Editor />;
+}
+```
+
+#### getDefaultToolbar
+
+获取默认工具栏配置。
+
+- 参数：`void`
+- 返回值：`ToolbarItem[]`
+- 说明：返回原始默认工具栏配置，不受 `toolbar.excludeTools` 属性影响。
+
+
+```tsx {1,5}
+import { Editor, ToolbarManager } from "mini-markdown-editor";
+
+export default function () {
+  useEffect(() => {
+    const res = ToolbarManager.getDefaultToolbar();
+    console.log(res);
+  }, []);
+  return (
+    <>
+      <Editor />
+    </>
+  );
+}
+```
+
+#### getToolbarOrder
+
+获取指定工具栏项的当前顺序。
+
+- 参数：`type`: `ToolbarType` - 工具栏类型
+- 返回值：`number` - 工具栏项的顺序索引，如果不存在则返回 -1
+- 说明：顺序索引从 0 开始，表示工具栏项在工具栏中的位置
+
+```tsx
+
+useEffect(() => {
+  const boldOrder = ToolbarManager.getToolbarOrder("bold");
+  console.log(`粗体按钮的位置是: ${boldOrder}`);
+}, []);
+
+```
+
+#### getAllToolbarsOrder
+
+获取所有工具栏项的顺序信息。
+
+- 参数：`void`
+- 返回值：`{ type: ToolbarType; order: number }[]` - 工具栏类型和顺序的数组
+- 说明：返回按顺序排列的工具栏类型和索引位置信息
+
+```tsx
+
+useEffect(() => {
+  const toolbarsOrder = ToolbarManager.getAllToolbarsOrder();
+  console.log("工具栏顺序:", toolbarsOrder);
+}, []);
+
+```
+
+#### getAllToolbars
+
+获取当前所有工具栏项。
+
+- 参数：`void`
+- 返回值：`ToolbarItem[]`
+- 说明：返回当前实际使用的工具栏配置，包括所有自定义修改。
+
+```tsx
+useEffect(() => {
+  const currentToolbars = ToolbarManager.getAllToolbars();
+  console.log(currentToolbars);
+}, []);
+```
+
+#### addToolItem
+
+添加新的工具栏项。
+
+- 参数：`item: ToolbarItem` - 工具栏项配置对象
+- 返回值：`void`
+- 说明：如果添加的工具栏类型已存在，将抛出错误。
+
+
+```tsx {1,5-16}
+import { Editor, ToolbarManager } from "mini-markdown-editor";
+
+export default function () {
+  useEffect(() => {
+  try {
+    ToolbarManager.addToolItem({
+      type: "custom-heading",  // 工具栏类型，必须唯一
+      icon: "heading",         // 图标名称
+      title: "自定义标题",      // 悬停提示文本
+      onClick: () => {
+        console.log("标题功能被点击");
+      },
+    });
+  } catch (error) {
+    console.error("添加工具栏失败:", error);
+  }
+}, []);
+  return (
+    <>
+      <Editor />
+    </>
+  );
+```
+
+#### setToolbarItemOrder
+
+设置单个工具栏项的顺序。
+
+- 参数：
+  - `type`: `ToolbarType` - 工具栏类型
+  - `newOrder`: `number` - 新的顺序位置
+- 返回值：`void`
+- 说明：会自动调整其他工具栏项的顺序以适应变化
+
+```tsx
+
+useEffect(() => {
+  try {
+    // 将粗体按钮移动到第一位置
+    ToolbarManager.setToolbarItemOrder("bold", 0);
+  } catch (error) {
+    console.error("设置工具栏顺序失败:", error);
+  }
+}, []);
+
+```
+
+#### setToolbarOrder
+
+批量设置多个工具栏项的顺序。
+
+- 参数：`orders`: `Record<ToolbarType, number>` - 类型到顺序的映射对象
+- 返回值：`void`
+- 说明：可以同时调整多个工具栏项的顺序
+
+```tsx
+
+useEffect(() => {
+  try {
+    ToolbarManager.setToolbarsOrder({
+      "bold": 0,
+      "italic": 1,
+      "underline": 2
+    });
+  } catch (error) {
+    console.error("批量设置工具栏顺序失败:", error);
+  }
+}, []);
+
+```
+
+#### updateToolbars
+
+完全替换工具栏配置。
+
+- 参数：`newToolbars`: `ToolbarItem[]` - 新的工具栏配置数组
+- 返回值：`void`
+
+:::warning 警告
+
+此操作会覆盖所有现有工具栏项，请谨慎使用！
+
+:::
+
+```tsx
+useEffect(() => {
+  ToolbarManager.updateToolbars([
+    {
+      type: "heading",
+      icon: "heading",
+      title: "标题",
+      onClick: () => {
+        console.log("标题功能被触发");
+      },
+    },
+    // 添加其他需要保留的工具栏项...
+  ]);
+}, []);
+```
+
+#### updateToolbarItem
+
+更新特定工具栏项的配置。
+
+- 参数：
+  - `type`: `ToolbarType` - 要更新的工具栏类型
+  - `partialToolbarItem`: `Partial<ToolbarItem>` - 部分工具栏配置
+- 返回值：`void`
+- 说明：只更新指定的属性，其他属性保持不变。
+
+
+```tsx
+useEffect(() => {
+  ToolbarManager.updateToolbarItem("bold", {
+    // 只更新以下属性，其他属性保持不变
+    onClick: () => {
+      console.log("自定义粗体功能");
+    },
+    hotkey: {
+      command: "Mod-b",
+      description: "加粗文本 (Ctrl+B)",
+      handle: () => {
+        console.log("通过快捷键触发粗体功能");
+      },
+    },
+  });
+}, []);
+```
+
+#### removeToolItem
+
+移除指定的工具栏项。
+
+- 参数：`type`: `ToolbarType` - 要移除的工具栏类型
+- 返回值：`void`
+- 说明：如果指定类型不存在，此操作不会产生任何效果。
+
+```tsx
+useEffect(() => {
+  ToolbarManager.removeToolItem("bold");
+}, []);
+```
+
+#### reset
+
+重置工具栏到初始状态。
+
+- 参数：`void`
+- 返回值：`void`
+- 说明：恢复到默认工具栏配置。
+
+
+```tsx
+useEffect(() => {
+  // 在进行多次自定义后，恢复到默认配置
+  ToolbarManager.reset();
+}, []);
+```
+
+#### reorderToolbar
+
+重新排序工具栏。
+
+- 参数：`newOrder`: `ToolbarType[]` - 新的工具栏顺序数组
+- 返回值：`void`
+- 说明：必须包含所有现有工具栏类型，否则将抛出错误。
+
+```tsx
+useEffect(() => {
+  try {
+    ToolbarManager.reorderToolbar([
+      "heading", "line", "table", 
+      "undo", "redo", "fullscreen"
+      // 需包含所有现有工具栏类型
+    ]);
+  } catch (error) {
+    console.error("工具栏重排序失败:", error);
+  }
+}, []);
+```
+
+#### swapToolbarsPosition
+
+- 参数：
+  - `firstType`: `ToolbarType` - 第一个工具栏类型
+  - `secondType`: `ToolbarType` - 第二个工具栏类型
+- 返回值：`void`
+- 说明：如果指定的工具栏类型不存在，将抛出错误。
+
+交换两个工具栏项的位置。
+
+```tsx
+
+useEffect(() => {
+  try {
+    // 交换粗体和斜体按钮的位置
+    ToolbarManager.swapToolbarsPosition("bold", "italic");
+  } catch (error) {
+    console.error("交换工具栏位置失败:", error);
+  }
+}, []);
+
+```
+
+#### 事件监听
+
+`ToolbarManager` 继承自 `BaseClass`，因此具有完整的事件管理能力，可以监听和响应工具栏变化事件。
+
+> 通过事件系统，您可以实现对工具栏变化的实时响应，如状态同步、UI更新等。 
+
+
+**事件监听方法示例：**
+
+```tsx
+
+// 监听工具栏变化事件
+ToolbarManager.on("toolbar:added", (toolbarItem) => {
+  console.log("新增了工具栏项:", toolbarItem);
+});
+
+// 一次性事件监听
+ToolbarManager.once("toolbar:removed", (type) => {
+  console.log(`工具栏项 ${type} 已被移除`);
+});
+
+// 移除事件监听
+const updateHandler = (updatedItem) => {
+  console.log("工具栏项已更新:", updatedItem);
+};
+ToolbarManager.on("toolbar:updated", updateHandler);
+// 稍后移除监听
+ToolbarManager.off("toolbar:updated", updateHandler);
+
+
+```
+
+:::tip 提示
+
+更多自定义事件类型，详见 [类型 ToolbarEvents](#toolbarevents)。
+
+:::
+
+#### 扩展方法
+
+`ToolbarManager` 提供了插件系统，允许您注册自定义方法来扩展其功能，无需继承或修改原始类。
+
+:::warning 注意 
+
+自定义方法中，`this` 指向 `ToolbarManager` 实例，因此可以访问所有公共方法。但应避免直接访问私有属性或修改内部状态，以免导致意外行为。 
+
+:::
+
+##### registerMethod
+
+注册自定义方法到工具栏管理器。
+
+- 参数：
+  - `name`: `string` - 方法名称
+  - `method`: `(...args: any[]) => any` - 方法实现
+  - `override`: `boolean = false` - 是否允许覆盖已存在的方法
+- 返回值：`void`
+
+```tsx
+
+useEffect(() => {
+  try {
+    ToolbarManager.registerMethod("groupToolbars", function(groupName) {
+      // 此处的 this 指向 ToolbarManager 实例
+      const allToolbars = this.getAllToolbars();
+      
+      // 根据类型分组工具栏
+      return {
+        formatting: allToolbars.filter(tool => 
+          ["bold", "italic", "underline"].includes(tool.type)
+        ),
+        insert: allToolbars.filter(tool => 
+          ["image", "link", "table"].includes(tool.type)
+        )
+      };
+    });
+  } catch (error) {
+    console.error("注册自定义方法失败:", error);
+  }
+}, []);
+
+```
+
+##### callMethod
+
+调用已注册的自定义方法。
+
+- 参数:
+  - `name`: `string` - 方法名称
+  - `...args`: `any[]` - 传递给方法的参数
+- 返回值: `any` - 自定义方法的返回值
+- 说明: 如果方法不存在，将抛出错误
+
+```tsx
+
+// 假定已注册了名为 groupToolbars 的自定义方法
+useEffect(() => {
+  try {
+    // 调用自定义分组方法
+    const groups = ToolbarManager.callMethod("groupToolbars", "default");
+    console.log("格式化工具:", groups.formatting);
+    console.log("插入工具:", groups.insert);
+  } catch (error) {
+    console.error("调用自定义方法失败:", error);
+  }
+}, []);
+
+```
+
+##### unregisterMethod
+
+移除已注册的自定义方法。
+
+- 参数: `name`: `string` - 方法名称
+- 返回值: `void`
+- 说明: 如果方法不存在，此操作不会产生任何效果
+
+```tsx 
+
+useEffect(() => {
+  // 当不再需要某个自定义方法时
+  ToolbarManager.unregisterMethod("groupToolbars");
+}, []);
+
+```
+
+#### 资源清理
+
+当不再需要 ToolbarManager 时，应当调用 `destroy()` 方法释放资源：
+
+```tsx
+
+useEffect(() => {
+  // ...
+  
+  return () => {
+    // 组件卸载时清理资源
+    ToolbarManager.destroy();
+  };
+}, []);
+
+```
+
+这将移除所有事件监听器和自定义方法，并标记实例为已销毁，防止内存泄漏和意外操作。
+
+### insertContent
+
+对 `Editor` 的编辑区进行操作的方法，可结合 `自定义toolbar` 使用，实现完整功能。
+
+:::tip 注意
+
+需要渲染 `<Editor />` 组件后，才能使用 `insertContent`。
+
+:::
+
+```ts
+import { insertContent } from "mini-markdown-editor";
+```
+
+#### 1. insertContent
+
+- 参数：`content: string, selection: { anchor: number; head: number }`
+- 返回值：`void`
+
+在编辑区插入内容（相比 `insertTextAtCursor` 方法，该方法控制更加精细）。
+
+:::info selection 参数
+
+`anchor、head`：用于控制光标位置，当 `anchor` 和 `head` 相等时，表示光标在当前位置，如果 `anchor` 和 `head` 不相等，则表示光标选中某段内容。
+
+:::
+
+```tsx
+import { Editor, insertContent } from "mini-markdown-editor";
+export default function () {
+  return (
+    <>
+      <button
+        onClick={() => {
+          insertContent.insertContent("hello world", { anchor: 1, head: 1 });
+        }}
+      >
+        插入内容
+      </button>
+      <Editor />
+    </>
+  );
+}
+```
+
+#### 2. insertTextAtCursor
+
+- 参数：`content: string`
+- 返回值：`void`
+
+在编辑区插入文本。
+
+```tsx
+import { insertContent } from "mini-markdown-editor";
+
+<button
+  onClick={() => {
+    insertContent.insertTextAtCursor("hello world");
+  }}
+>
+  插入文本
+</button>;
+```
+
+#### 3. undo、redo
+
+- 参数：`void`
+- 返回值：`void`
+
+撤销、重做。
+
+```tsx
+import { insertContent } from "mini-markdown-editor";
+
+<button
+  onClick={() => {
+    insertContent.undo();
+  }}
+>
+  撤销
+</button>;
+<button
+  onClick={() => {
+    insertContent.redo();
+  }}
+>
+  重做
+</button>;
+```
+
+## 常量
+
+### EDITOR_CONTENT_KEY
+
+编辑区内容存储( localStorage )的 `key`，值为 `markdown-editor-content`。
+
+### SYNC_SCROLL_STATUS
+
+同步滚动状态(存储在 localStorage 中)，值为 `markdown-editor-sync-scroll`。
+
+## 类型
+
+### EditorView、ViewUpdate
+
+编辑区使用的是 `CodeMirror`，对外暴露了 `EditorView` 和 `ViewUpdate` 两个类型，可供使用。
+
+```ts
+import type { EditorView, ViewUpdate } from "mini-markdown-editor";
+```
+
+### ToolbarType
+
+工具栏类型，用于配置 `toolbar`。
+
+```ts
+// 基础工具栏类型
+enum BaseToolbarType {
+  HEADING = "heading",
+  HEADING_1 = "heading-1",
+  HEADING_2 = "heading-2",
+  HEADING_3 = "heading-3",
+  HEADING_4 = "heading-4",
+  HEADING_5 = "heading-5",
+  HEADING_6 = "heading-6",
+  BOLD = "bold",
+  ITALIC = "italic",
+  UNDERLINE = "underline",
+  DELETE = "delete",
+  LINE = "line",
+  BLOCKQUOTE = "blockquote",
+  UL = "ul",
+  OL = "ol",
+  INLINECODE = "inlinecode",
+  CODE = "code",
+  LINK = "link",
+  IMAGE = "image",
+  IMAGE_LINK = "image-link",
+  IMAGE_UPLOAD = "image-upload",
+  TABLE = "table",
+  UNDO = "undo",
+  REDO = "redo",
+  FULLSCREEN = "fullscreen",
+  WRITE = "write",
+  PREVIEW = "preview",
+  CONTENTS = "contents",
+  HELP = "help",
+  OUTPUT = "output",
+  EMOJI = "emoji",
+  SAVE = "save",
+}
+
+// 允许用户扩展的工具栏类型
+type ExtendedToolbarType = string;
+
+// 合并基础类型和扩展类型
+type ToolbarType = BaseToolbarType | ExtendedToolbarType;
+```
+
+**使用：**
+
+```ts
+import type { ToolbarType } from "mini-markdown-editor";
+```
+
+### ToolbarItem
+
+工具栏每一项类型。
+
+```ts
+// 工具栏列表项接口
+interface ToolbarItemListItem {
+  title: string;
+  type: string;
+  hotkey?: {
+    command: string;
+    description: string;
+    handle?: () => void;
+  };
+  onClick?: (...args: any[]) => void | (() => void);
+}
+
+// 完整的工具栏项接口
+interface ToolbarItem extends BaseToolbarItem {
+  list?: ToolbarItemListItem[];
+  hotkey?: {
+    command: string;
+    description: string;
+    handle?: () => void;
+  };
+}
+```
+
+### ToolbarEvents
+
+工具栏基础自定义事件类型。
+
+```ts 
+
+enum ToolbarEvents {
+  TOOLBAR_ADDED = "toolbar:added",
+  TOOLBAR_REMOVED = "toolbar:removed",
+  TOOLBAR_UPDATED = "toolbar:updated",
+  TOOLBAR_REORDERED = "toolbar:reordered",
+  TOOLBAR_RESET = "toolbar:reset",
+  TOOLBAR_ERROR = "toolbar:error",
+  METHOD_REGISTERED = "method:registered",
+  METHOD_UNREGISTERED = "method:unregistered",
+  beforeDestroy = "beforeDestroy",
+  destroy = "destroy",
+}
+
+```
+
+### ToolbarContextValues
+
+工具栏上下文值接口，可以对工具栏进行“增删改查”。
+
+```ts
+interface ToolbarContextValues {
+  toolbars: ToolbarItem[];
+  addToolbar?: (toolbarItem: ToolbarItem) => void;
+  removeToolbar?: (type: ToolbarType) => void;
+  updateToolbar?: (type: ToolbarType, newConfig: Partial<ToolbarItem>) => void;
+  reorderToolbars?: (newOrder: ToolbarType[]) => void;
+}
+```
+
+### GlobalConfig
+
+全局配置类型。
+
+> `ReactCodeMirrorProps` 来自 `@uiw/react-codemirror`。
+>
+> 因此，可以使用 `CodeMirrorProps` 中的配置。
+
+```ts
+interface GlobalConfig extends ReactCodeMirrorProps {
+  /**
+   * 编辑器初始内容
+   */
+  value?: string;
+  /**
+   * 配置工具栏
+   * 添加工具; 排除工具; 排序工具
+   */
+  toolbars?: {
+    addTools?: ToolbarItem[];
+    excludeTools?: string[];
+    orderTools?: { type: string; order: number }[];
+  };
+  /**
+   * 底部状态栏是否显示，默认显示
+   */
+  status?: boolean;
+    /**
+   * 语言环境
+   */
+  locale?: "en" | "cn" | "tw";
+  /**
+   * 编辑器主题
+   */
+  theme?: "light" | "dark";
+  /**
+   * 是否开启本地存储
+   */
+  local?: boolean; // 是否开启本地存储
+  /**
+   * 编辑区是否显示行号
+   */
+  lineNumbers?: boolean;
+  /**
+   * 是否开启快捷键支持
+   */
+  enableShortcuts?: boolean;
+  /**
+   * 改变编辑器内容时触发
+   */
+  onChange?: (value: string, editorView: ViewUpdate) => void;
+  /**
+   * 上传图片时触发
+   */
+  onUpload?: (file: File, callback: Callback) => void;
+  /**
+   * 拖拽上传图片时触发
+   */
+  onDragUpload?: (file: File, callback: Callback) => void;
+  /**
+   * 粘贴上传图片时触发
+   */
+  onPatseUpload?: (file: File, callback: Callback) => void;
+  /**
+   * 保存触发
+   */
+  onSave?: (value: string, editorView: EditorView) => void;
+}
+
+type Callback = (param: { url: string; alt?: string }) => void;
+```
+
+其他类型
+
+```ts
+type GlobalContextConfig = Pick<
+  GlobalConfig,
+  | "theme"
+  | "value"
+  | "toolbars"
+  | "status"
+  | "local"
+  | "lineNumbers"
+  | "enableShortcuts"
+  | "onUpload"
+  | "onDragUpload"
+  | "onPatseUpload"
+  | "onSave"
+  | "onChange"
+>;
+type EditorConfig = Omit<GlobalConfig, keyof GlobalContextConfig>;
+```
+
+### EditorRef
+
+```ts
+interface EditorRef {
+  /**
+   * 获取编辑器内容
+   */
+  getContent: () => string;
+  /**
+   * 设置编辑器内容
+   */
+  setContent: (content: string) => void;
+  /**
+   * 清空编辑器内容
+   */
+  clear: () => void;
+  /**
+   * 设置光标位置
+   */
+  setCursor: (start: number, end: number) => void;
+  /**
+   * 获取光标位置
+   */
+  getCursor: () => { from: number; to: number };
+  /**
+   * 获取选中内容
+   */
+  getSelection: () => string;
+  /**
+   * 聚焦
+   */
+  focus: () => void;
+  /**
+   * 获取编辑器实例
+   */
+  getEditorInstance: () => EditorView | null;
+  /**
+   * 获取预览区实例
+   */
+  getPreviewInstance: () => HTMLElement | null;
+}
+```

@@ -1,0 +1,25 @@
+//全局theme
+import type { DefaultTheme } from "styled-components";
+export const lightTheme: DefaultTheme = {
+  background: "#ffffff",
+  color: "#000000",
+  borderColor: "#e6e6e6",
+  silderHelpTitleColor: "#3f4a54",
+  silderHelpTextColor: "#959da5",
+  statusColor: "#333333",
+  toolbarHoverBg: "#e6e6e6",
+  scrollbarThumbBgColor: "#d9d9d9",
+  scrollbarTrackBgColor: "#f5f5f5",
+};
+
+export const darkTheme: DefaultTheme = {
+  background: "#191d24",
+  color: "#dfdfdf",
+  borderColor: "#464646",
+  silderHelpTitleColor: "#bac6d2",
+  silderHelpTextColor: "#bac6d2",
+  statusColor: "#dfdfdf",
+  toolbarHoverBg: "#464646",
+  scrollbarThumbBgColor: "#898989",
+  scrollbarTrackBgColor: "#898989",
+};
