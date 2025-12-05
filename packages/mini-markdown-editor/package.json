@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build:ast": "pnpm -F @mini-markdown-resin/ast-parser build",
-    "dev": "pnpm build:ast && vite",
+    "dev": " vite",
     "build": "pnpm build:ast && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
